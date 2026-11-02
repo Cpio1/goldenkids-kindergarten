@@ -13,14 +13,14 @@ import { Hero } from "./Hero";
 import { Meals } from "./Meals";
 
 /** Website for computers (≥ 1080 px). */
-export function Website({ logo, heroImage, aboutImage, gallery }: SiteMedia) {
+export function Website({ logo, heroImage, aboutImage, aboutVideo, gallery }: SiteMedia) {
   const mainId = useSectionId("main");
   return (
     <>
       <Header logo={logo} />
       <main id={mainId} tabIndex={-1} className="outline-none">
         <Hero logo={logo} image={heroImage} />
-        <About image={aboutImage} />
+        <About image={aboutImage} video={aboutVideo} />
         <Groups />
         <Meals />
         <Gallery items={gallery} />

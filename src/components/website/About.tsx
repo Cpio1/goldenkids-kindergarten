@@ -2,14 +2,15 @@
 
 import { useId } from "react";
 import { Baby, Clock, Languages, MapPin } from "lucide-react";
-import type { SiteImage } from "@/lib/images";
+import type { GalleryVideo, SiteImage } from "@/lib/images";
+import { AboutVideo } from "@/components/shared/AboutVideo";
 import { useLanguage } from "@/i18n/LanguageProvider";
 import { Blob, Leaf, Sun } from "@/components/shared/Decor";
 import { FramedPhoto } from "@/components/shared/Photo";
 import { Reveal } from "@/components/shared/Reveal";
 import { Section, SectionTitle } from "@/components/shared/Section";
 
-export function About({ image }: { image: SiteImage | null }) {
+export function About({ image, video }: { image: SiteImage | null; video: GalleryVideo | null }) {
   const { t } = useLanguage();
   const titleId = useId();
   const f = t.about.facts;
@@ -27,17 +28,21 @@ export function About({ image }: { image: SiteImage | null }) {
           <Blob className="absolute -left-8 top-10 h-[86%] w-[86%]" fill="#FDF3C8" variant={0} />
           <Sun className="spin-slow absolute -left-6 -top-4 z-10 h-14 w-14" />
           <Leaf className="sway absolute -right-3 bottom-16 z-10 h-10 w-10" tone="lime" />
-          <div className="photo-ring shape-arch relative">
-            <FramedPhoto
-              image={image}
-              alt={t.about.photoAlt}
-              sizes="420px"
-              shapeClassName="shape-arch"
-              minRatio={0.78}
-              maxRatio={1.05}
-              fallbackRatio={0.85}
-            />
-          </div>
+          {video ? (
+            <AboutVideo video={video} />
+          ) : (
+            <div className="photo-ring shape-arch relative">
+              <FramedPhoto
+                image={image}
+                alt={t.about.photoAlt}
+                sizes="420px"
+                shapeClassName="shape-arch"
+                minRatio={0.78}
+                maxRatio={1.05}
+                fallbackRatio={0.85}
+              />
+            </div>
+          )}
         </Reveal>
 
         <div>

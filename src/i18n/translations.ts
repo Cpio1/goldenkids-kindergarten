@@ -38,6 +38,7 @@ export type Dictionary = {
     title: string;
     text: string;
     photoAlt: string;
+    videoLabel: string;
     facts: { age: Stat; language: Stat; hours: Stat; address: Stat };
   };
   groups: {
@@ -148,6 +149,7 @@ const kk: Dictionary = {
     title: "Балаларға арналған жылы әрі қамқор орта",
     text: "Golden Kids World — 2 жастан 6 жасқа дейінгі балаларға арналған балабақша. Балаларды қазақ тілінде оқытамыз және тәрбиелейміз. Балабақша Мамыр-4, 125 мекенжайында орналасқан және 07:30-дан 18:30-ға дейін жұмыс істейді.",
     photoAlt: "Golden Kids World балабақшасы",
+    videoLabel: "Golden Kids World балабақшасы туралы бейне",
     facts: {
       age: { label: "Балалардың жасы", value: "2–6 жас" },
       language: { label: "Оқыту тілі", value: "Қазақ тілі" },
@@ -266,6 +268,7 @@ const ru: Dictionary = {
     title: "Тёплая и заботливая среда для детей",
     text: "Golden Kids World — детский сад для детей от 2 до 6 лет. Обучение и воспитание ведутся на казахском языке. Сад находится по адресу Мамыр-4, 125 и работает с 07:30 до 18:30.",
     photoAlt: "Детский сад Golden Kids World",
+    videoLabel: "Видео о детском саде Golden Kids World",
     facts: {
       age: { label: "Возраст детей", value: "2–6 лет" },
       language: { label: "Язык обучения", value: "Казахский" },

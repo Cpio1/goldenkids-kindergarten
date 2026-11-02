@@ -13,14 +13,14 @@ import { MobileHero } from "./MobileHero";
 import { MobileMeals } from "./MobileMeals";
 
 /** Website for phones and tablets (< 1080 px) — its own composition, not a scaled-down desktop. */
-export function MobileWebsite({ logo, heroImage, aboutImage, gallery }: SiteMedia) {
+export function MobileWebsite({ logo, heroImage, aboutImage, aboutVideo, gallery }: SiteMedia) {
   const mainId = useSectionId("main");
   return (
     <>
       <MobileHeader logo={logo} />
       <main id={mainId} tabIndex={-1} className="outline-none">
         <MobileHero logo={logo} image={heroImage} />
-        <MobileAbout image={aboutImage} />
+        <MobileAbout image={aboutImage} video={aboutVideo} />
         <MobileGroups />
         <MobileMeals />
         <MobileGallery items={gallery} />

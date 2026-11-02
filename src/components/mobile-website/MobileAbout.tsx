@@ -2,14 +2,15 @@
 
 import { useId } from "react";
 import { Baby, Clock, Languages, MapPin } from "lucide-react";
-import type { SiteImage } from "@/lib/images";
+import type { GalleryVideo, SiteImage } from "@/lib/images";
+import { AboutVideo } from "@/components/shared/AboutVideo";
 import { useLanguage } from "@/i18n/LanguageProvider";
 import { Leaf } from "@/components/shared/Decor";
 import { FramedPhoto } from "@/components/shared/Photo";
 import { Reveal } from "@/components/shared/Reveal";
 import { Section, SectionTitle } from "@/components/shared/Section";
 
-export function MobileAbout({ image }: { image: SiteImage | null }) {
+export function MobileAbout({ image, video }: { image: SiteImage | null; video: GalleryVideo | null }) {
   const { t } = useLanguage();
   const titleId = useId();
   const f = t.about.facts;
@@ -29,17 +30,21 @@ export function MobileAbout({ image }: { image: SiteImage | null }) {
 
         <Reveal className="relative mx-auto mt-6 max-w-[360px]">
           <Leaf className="sway absolute -left-2 top-10 z-10 h-9 w-9" tone="lime" />
-          <div className="photo-ring shape-arch relative !p-1.5">
-            <FramedPhoto
-              image={image}
-              alt={t.about.photoAlt}
-              sizes="360px"
-              shapeClassName="shape-arch"
-              minRatio={0.85}
-              maxRatio={1.1}
-              fallbackRatio={0.95}
-            />
-          </div>
+          {video ? (
+            <AboutVideo video={video} compact />
+          ) : (
+            <div className="photo-ring shape-arch relative !p-1.5">
+              <FramedPhoto
+                image={image}
+                alt={t.about.photoAlt}
+                sizes="360px"
+                shapeClassName="shape-arch"
+                minRatio={0.85}
+                maxRatio={1.1}
+                fallbackRatio={0.95}
+              />
+            </div>
+          )}
         </Reveal>
 
         <Reveal>

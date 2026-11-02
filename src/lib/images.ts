@@ -8,7 +8,7 @@ import { imageSize } from "image-size";
  * All site media is read from `public` at build time (top level of the folders below):
  * - logo.*       → logo (header, first screen, footer)
  * - main-page.*  → first screen (only when there is no logo)
- * - main-page2.* → «About» section
+ * - main-page2.* → «About» section: a video (mp4, webm, mov, m4v) takes priority over a photo
  * - image1.*, image2.*, …  → gallery photos   (jpg, jpeg, png, webp)
  * - video1.*, video2.*, …  → gallery videos   (mp4, webm, mov, m4v)
  *   optional preview frame: videoN-poster.* or an image with the same name (videoN.jpg)
@@ -116,8 +116,22 @@ export type SiteMedia = {
   logo: SiteImage | null;
   heroImage: SiteImage | null;
   aboutImage: SiteImage | null;
+  aboutVideo: GalleryVideo | null;
   gallery: GalleryItem[];
 };
+
+/** A real video file named `name.*` (case-insensitive), with an optional `name-poster.*` preview. */
+function findVideo(files: Found[], name: string): GalleryVideo | null {
+  const candidates = files.filter((f) => ext(f.file) in VIDEO_TYPES && baseName(f.file).toLowerCase() === name).sort(byExtension);
+  for (const file of candidates) {
+    if (!videoHash(file)) continue; // empty or unreadable
+    const poster = files
+      .filter((p) => IMAGE_EXT.includes(ext(p.file)) && baseName(p.file).toLowerCase() === `${name}-poster`)
+      .sort(byExtension)[0];
+    return { kind: "video", src: publicUrl(file), type: VIDEO_TYPES[ext(file.file)], poster: poster ? publicUrl(poster) : null };
+  }
+  return null;
+}
 
 export function getSiteMedia(): SiteMedia {
   const files = listFiles();
@@ -171,6 +185,7 @@ export function getSiteMedia(): SiteMedia {
     logo: logo && strip(logo),
     heroImage: hero && strip(hero),
     aboutImage: about && strip(about),
+    aboutVideo: findVideo(files, "main-page2"),
     gallery: entries.map((e) => e.item),
   };
 }
