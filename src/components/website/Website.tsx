@@ -23,7 +23,7 @@ export function Website({ logo, heroImage, aboutImage, gallery }: SiteMedia) {
         <About image={aboutImage} />
         <Groups />
         <Meals />
-        <Gallery images={gallery} />
+        <Gallery items={gallery} />
         <Documents />
         <Contacts />
       </main>

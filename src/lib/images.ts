@@ -5,45 +5,72 @@ import path from "node:path";
 import { imageSize } from "image-size";
 
 /**
- * All photos come from public/images and are read at build time:
+ * All site media is read from `public` at build time (top level of the folders below):
  * - logo.*       → logo (header, first screen, footer)
- * - main-page.*  → first screen
+ * - main-page.*  → first screen (only when there is no logo)
  * - main-page2.* → «About» section
- * - image1.*, image2.*, … (natural order) → gallery
- * Supported: jpg, jpeg, png, webp. Add or replace files and rebuild — no code changes needed.
+ * - image1.*, image2.*, …  → gallery photos   (jpg, jpeg, png, webp)
+ * - video1.*, video2.*, …  → gallery videos   (mp4, webm, mov, m4v)
+ *   optional preview frame: videoN-poster.* or an image with the same name (videoN.jpg)
+ * Gallery items are sorted by their number (image6, video7, image10…); photo before video on a tie.
+ * Names are matched case-insensitively; byte-identical copies are skipped.
+ * Add or replace files and rebuild — no code changes needed.
  */
 export type SiteImage = { src: string; width: number; height: number };
+export type GalleryPhoto = SiteImage & { kind: "image" };
+export type GalleryVideo = {
+  kind: "video";
+  src: string;
+  /** MIME type for <source>; omitted for .mov so every browser can try it */
+  type?: string;
+  /** preview frame image, if one was provided next to the video */
+  poster: string | null;
+};
+export type GalleryItem = GalleryPhoto | GalleryVideo;
+
+type Found = { dir: string; file: string };
 type ImageFile = SiteImage & { hash: string };
 
-const IMAGES_DIR = path.join(process.cwd(), "public", "images");
-const SUPPORTED = [".webp", ".jpg", ".jpeg", ".png"]; // also the preference order for duplicates
-const GALLERY = /^image\d+$/i;
+const PUBLIC_DIR = path.join(process.cwd(), "public");
+const MEDIA_DIRS = ["images", "videos", "video", "gallery", "."];
+const IMAGE_EXT = [".webp", ".jpg", ".jpeg", ".png"]; // also the preference order for duplicates
+const VIDEO_TYPES: Record<string, string | undefined> = { ".mp4": "video/mp4", ".m4v": "video/mp4", ".webm": "video/webm", ".mov": undefined };
+const GALLERY_IMAGE = /^image(\d+)$/i;
+const GALLERY_VIDEO = /^video(\d+)$/i;
 
-const collator = new Intl.Collator("en", { numeric: true, sensitivity: "base" });
+const ext = (file: string) => path.extname(file).toLowerCase();
 const baseName = (file: string) => path.basename(file, path.extname(file));
+const publicUrl = ({ dir, file }: Found) =>
+  "/" + [...(dir === "." ? [] : [dir]), file].map(encodeURIComponent).join("/");
 const strip = ({ src, width, height }: ImageFile): SiteImage => ({ src, width, height });
 
-function listFiles(): string[] {
-  try {
-    return fs
-      .readdirSync(IMAGES_DIR, { withFileTypes: true })
-      .filter((entry) => entry.isFile() && !entry.name.startsWith("."))
-      .map((entry) => entry.name)
-      .filter((name) => SUPPORTED.includes(path.extname(name).toLowerCase()));
-  } catch {
-    return []; // the folder may not exist yet — a valid empty state
+function listFiles(): Found[] {
+  const found: Found[] = [];
+  for (const dir of MEDIA_DIRS) {
+    try {
+      for (const entry of fs.readdirSync(path.join(PUBLIC_DIR, dir), { withFileTypes: true })) {
+        if (!entry.isFile() || entry.name.startsWith(".")) continue;
+        const e = ext(entry.name);
+        if (IMAGE_EXT.includes(e) || e in VIDEO_TYPES) found.push({ dir, file: entry.name });
+      }
+    } catch {
+      // folder doesn't exist — fine
+    }
   }
+  return found;
 }
 
-function readImage(file: string): ImageFile | null {
+const fullPath = ({ dir, file }: Found) => path.join(PUBLIC_DIR, dir, file);
+
+function readImage(found: Found): ImageFile | null {
   try {
-    const buffer = fs.readFileSync(path.join(IMAGES_DIR, file));
+    const buffer = fs.readFileSync(fullPath(found));
     const { width, height, orientation } = imageSize(buffer);
     if (!width || !height) return null;
     // EXIF orientations 5–8: the photo is displayed rotated by 90°
     const rotated = orientation !== undefined && orientation >= 5 && orientation <= 8;
     return {
-      src: `/images/${encodeURIComponent(file)}`,
+      src: publicUrl(found),
       width: rotated ? height : width,
       height: rotated ? width : height,
       hash: createHash("sha1").update(buffer).digest("hex"),
@@ -53,11 +80,32 @@ function readImage(file: string): ImageFile | null {
   }
 }
 
-const byExtension = (a: string, b: string) =>
-  SUPPORTED.indexOf(path.extname(a).toLowerCase()) - SUPPORTED.indexOf(path.extname(b).toLowerCase());
+/** Cheap fingerprint for (possibly large) videos: size + first 4 MB. */
+function videoHash(found: Found): string | null {
+  try {
+    const fd = fs.openSync(fullPath(found), "r");
+    try {
+      const { size } = fs.fstatSync(fd);
+      if (size < 1024) return null; // empty / placeholder file
+      const buffer = Buffer.alloc(Math.min(size, 4 * 1024 * 1024));
+      fs.readSync(fd, buffer, 0, buffer.length, 0);
+      return `${size}:${createHash("sha1").update(buffer).digest("hex")}`;
+    } finally {
+      fs.closeSync(fd);
+    }
+  } catch {
+    return null;
+  }
+}
 
-function findNamed(files: string[], name: string): ImageFile | null {
-  for (const file of files.filter((f) => baseName(f).toLowerCase() === name).sort(byExtension)) {
+const byExtension = (a: Found, b: Found) => {
+  const order = [...IMAGE_EXT, ...Object.keys(VIDEO_TYPES)];
+  return order.indexOf(ext(a.file)) - order.indexOf(ext(b.file));
+};
+
+function findNamed(files: Found[], name: string): ImageFile | null {
+  const candidates = files.filter((f) => IMAGE_EXT.includes(ext(f.file)) && baseName(f.file).toLowerCase() === name);
+  for (const file of candidates.sort(byExtension)) {
     const image = readImage(file);
     if (image) return image;
   }
@@ -68,7 +116,7 @@ export type SiteMedia = {
   logo: SiteImage | null;
   heroImage: SiteImage | null;
   aboutImage: SiteImage | null;
-  gallery: SiteImage[];
+  gallery: GalleryItem[];
 };
 
 export function getSiteMedia(): SiteMedia {
@@ -77,27 +125,52 @@ export function getSiteMedia(): SiteMedia {
   const hero = findNamed(files, "main-page");
   const about = findNamed(files, "main-page2");
 
-  // image1.png and image1.jpg → one photo; byte-identical copies are skipped
-  const seen = new Set([hero, about].flatMap((img) => (img ? [img.hash] : [])));
+  const seen = new Set([logo, hero, about].flatMap((img) => (img ? [img.hash] : [])));
   const names = new Set<string>();
-  const gallery: SiteImage[] = [];
+  const entries: { n: number; order: number; item: GalleryItem }[] = [];
+
   const candidates = files
-    .filter((f) => GALLERY.test(baseName(f)))
-    .sort((a, b) => collator.compare(baseName(a), baseName(b)) || byExtension(a, b));
-  for (const file of candidates) {
-    const key = baseName(file).toLowerCase();
+    .map((f) => {
+      const base = baseName(f.file);
+      const photo = IMAGE_EXT.includes(ext(f.file)) && GALLERY_IMAGE.exec(base);
+      const video = ext(f.file) in VIDEO_TYPES && GALLERY_VIDEO.exec(base);
+      const match = photo || video;
+      return match ? { f, n: Number(match[1]), kind: photo ? ("image" as const) : ("video" as const) } : null;
+    })
+    .filter((c): c is NonNullable<typeof c> => !!c)
+    .sort((a, b) => a.n - b.n || (a.kind === b.kind ? 0 : a.kind === "image" ? -1 : 1) || byExtension(a.f, b.f));
+
+  for (const { f, n, kind } of candidates) {
+    const key = `${kind}${n}`; // image1.png + image1.jpg → one item
     if (names.has(key)) continue;
-    const image = readImage(file);
-    if (!image || seen.has(image.hash)) continue;
-    names.add(key);
-    seen.add(image.hash);
-    gallery.push(strip(image));
+
+    if (kind === "image") {
+      const image = readImage(f);
+      if (!image || seen.has(image.hash)) continue;
+      seen.add(image.hash);
+      names.add(key);
+      entries.push({ n, order: 0, item: { kind: "image", ...strip(image) } });
+    } else {
+      const hash = videoHash(f);
+      if (!hash || seen.has(hash)) continue;
+      seen.add(hash);
+      names.add(key);
+      const base = baseName(f.file).toLowerCase();
+      const posterFile = files
+        .filter((p) => IMAGE_EXT.includes(ext(p.file)) && [base, `${base}-poster`].includes(baseName(p.file).toLowerCase()))
+        .sort(byExtension)[0];
+      entries.push({
+        n,
+        order: 1,
+        item: { kind: "video", src: publicUrl(f), type: VIDEO_TYPES[ext(f.file)], poster: posterFile ? publicUrl(posterFile) : null },
+      });
+    }
   }
 
   return {
     logo: logo && strip(logo),
     heroImage: hero && strip(hero),
     aboutImage: about && strip(about),
-    gallery,
+    gallery: entries.map((e) => e.item),
   };
 }

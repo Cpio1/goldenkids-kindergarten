@@ -2,34 +2,40 @@
 
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
-import type { SiteImage } from "@/lib/images";
+import type { GalleryItem } from "@/lib/images";
 import { useLanguage } from "@/i18n/LanguageProvider";
+import { itemNumbers, useItemLabel } from "./GalleryTile";
 import { useScrollLock } from "./hooks";
 
 /**
- * Full-size photo viewer: Escape / × to close, ← → and swipe to switch,
- * focus trapped inside while open and returned to the thumbnail on close.
+ * Full-size viewer for photos and videos.
+ * - Escape / × to close, ← → and swipe to switch; focus trapped inside and returned on close.
+ * - Photos and videos are shown whole (object-contain), limited to the screen height.
+ * - Videos never autoplay; they stop when the viewer closes or switches to another item.
  */
 export function Lightbox({
-  images,
+  items,
   index,
   onChange,
   onClose,
 }: {
-  images: SiteImage[];
+  items: GalleryItem[];
   index: number | null;
   onChange: (index: number) => void;
   onClose: () => void;
 }) {
   const { t } = useLanguage();
+  const label = useItemLabel();
+  const numbers = useMemo(() => itemNumbers(items), [items]);
   const open = index !== null;
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const returnTo = useRef<HTMLElement | null>(null);
   const touchX = useRef<number | null>(null);
-  const total = images.length;
+  const total = items.length;
 
   useScrollLock(open);
 
@@ -44,18 +50,27 @@ export function Lightbox({
     };
   }, [open]);
 
+  // stop the video when switching items or closing (the element is also unmounted)
+  useEffect(() => {
+    const video = videoRef.current;
+    // a detached element could otherwise keep playing sound in some browsers
+    return () => video?.pause();
+  }, [index]);
+
   useEffect(() => {
     if (index === null) return;
     const onKey = (event: KeyboardEvent) => {
+      // arrows inside the video controls seek the video instead of switching items
+      const inVideo = document.activeElement instanceof HTMLVideoElement;
       if (event.key === "Escape") {
         event.preventDefault();
         onClose();
-      } else if (event.key === "ArrowRight" && total > 1) {
+      } else if (event.key === "ArrowRight" && total > 1 && !inVideo) {
         onChange((index + 1) % total);
-      } else if (event.key === "ArrowLeft" && total > 1) {
+      } else if (event.key === "ArrowLeft" && total > 1 && !inVideo) {
         onChange((index - 1 + total) % total);
       } else if (event.key === "Tab") {
-        const focusables = dialogRef.current?.querySelectorAll<HTMLElement>("button");
+        const focusables = dialogRef.current?.querySelectorAll<HTMLElement>("button, video");
         if (!focusables?.length) return;
         const first = focusables[0];
         const last = focusables[focusables.length - 1];
@@ -75,8 +90,8 @@ export function Lightbox({
     return () => document.removeEventListener("keydown", onKey);
   }, [index, total, onChange, onClose]);
 
-  if (index === null || !images[index]) return null;
-  const image = images[index];
+  if (index === null || !items[index]) return null;
+  const item = items[index];
   const prev = () => onChange((index - 1 + total) % total);
   const next = () => onChange((index + 1) % total);
 
@@ -95,7 +110,7 @@ export function Lightbox({
         if (touchX.current === null || total < 2) return;
         const dx = event.changedTouches[0].clientX - touchX.current;
         touchX.current = null;
-        if (Math.abs(dx) > 50) (dx < 0 ? next : prev)();
+        if (Math.abs(dx) > 60) (dx < 0 ? next : prev)();
       }}
     >
       <div className="lightbox__top">
@@ -108,16 +123,26 @@ export function Lightbox({
       </div>
 
       <div className="lightbox__stage" onClick={(event) => event.target === event.currentTarget && onClose()}>
-        <div className="relative h-full w-full">
-          <Image
-            key={image.src}
-            src={image.src}
-            alt={t.gallery.photoAlt(index + 1)}
-            fill
-            sizes="100vw"
-            className="object-contain"
-          />
-        </div>
+        {item.kind === "image" ? (
+          <div className="relative h-full w-full">
+            <Image key={item.src} src={item.src} alt={label(item, numbers[index])} fill sizes="100vw" className="object-contain" />
+          </div>
+        ) : (
+          <div className="flex h-full w-full items-center justify-center" onClick={(event) => event.target === event.currentTarget && onClose()}>
+            <video
+              key={item.src}
+              ref={videoRef}
+              className="lightbox__video"
+              controls
+              playsInline
+              preload="metadata"
+              poster={item.poster ?? undefined}
+              aria-label={label(item, numbers[index])}
+            >
+              <source src={item.poster ? item.src : `${item.src}#t=0.1`} type={item.type} />
+            </video>
+          </div>
+        )}
       </div>
 
       {total > 1 && (

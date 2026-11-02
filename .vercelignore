@@ -1,0 +1,4 @@
+# Saved web pages (WhatsApp Web "Save page as") — private chat data, never deploy
+public/**/*.html
+public/**/*_files/
+assets/

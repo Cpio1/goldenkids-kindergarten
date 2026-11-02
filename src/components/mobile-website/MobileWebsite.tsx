@@ -23,7 +23,7 @@ export function MobileWebsite({ logo, heroImage, aboutImage, gallery }: SiteMedi
         <MobileAbout image={aboutImage} />
         <MobileGroups />
         <MobileMeals />
-        <MobileGallery images={gallery} />
+        <MobileGallery items={gallery} />
         <MobileDocuments />
         <MobileContacts />
       </main>

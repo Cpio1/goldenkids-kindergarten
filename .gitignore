@@ -7,3 +7,7 @@ next-env.d.ts
 .DS_Store
 .env*.local
 
+
+# Saved web pages (WhatsApp Web "Save page as") — private chat data, never publish
+public/**/*.html
+public/**/*_files/

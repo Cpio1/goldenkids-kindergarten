@@ -60,11 +60,15 @@ export type Dictionary = {
     eyebrow: string;
     title: string;
     text: string;
+    textWithVideo: string;
     empty: string;
     more: string;
     less: string;
     photoAlt: (n: number) => string;
     open: (n: number) => string;
+    videoLabel: (n: number) => string;
+    openVideo: (n: number) => string;
+    videoBadge: string;
     dialog: string;
     close: string;
     prev: string;
@@ -171,15 +175,19 @@ const kk: Dictionary = {
     eyebrow: "Галерея",
     title: "Балабақша өмірінен",
     text: "Golden Kids World балабақшасының фотосуреттері.",
+    textWithVideo: "Golden Kids World балабақшасының фотосуреттері мен бейнелері.",
     empty: "Фотосуреттер жақында қосылады",
     more: "Көбірек көрсету",
     less: "Жасыру",
     photoAlt: (n) => `Golden Kids World балабақшасы — ${n}-фото`,
     open: (n) => `${n}-фотоны үлкейтіп ашу`,
-    dialog: "Фотосуретті қарау",
+    videoLabel: (n) => `Golden Kids World балабақшасы — ${n}-бейне`,
+    openVideo: (n) => `${n}-бейнені ашу`,
+    videoBadge: "Бейне",
+    dialog: "Фото және бейнені қарау",
     close: "Жабу",
-    prev: "Алдыңғы фото",
-    next: "Келесі фото",
+    prev: "Алдыңғысы",
+    next: "Келесісі",
     counter: (n, total) => `${n} / ${total}`,
   },
   documents: {
@@ -285,15 +293,19 @@ const ru: Dictionary = {
     eyebrow: "Галерея",
     title: "Из жизни детского сада",
     text: "Фотографии детского сада Golden Kids World.",
+    textWithVideo: "Фотографии и видео детского сада Golden Kids World.",
     empty: "Фотографии скоро появятся",
     more: "Показать больше",
     less: "Свернуть",
     photoAlt: (n) => `Детский сад Golden Kids World — фото ${n}`,
     open: (n) => `Открыть фото ${n} в полном размере`,
-    dialog: "Просмотр фотографии",
+    videoLabel: (n) => `Детский сад Golden Kids World — видео ${n}`,
+    openVideo: (n) => `Открыть видео ${n}`,
+    videoBadge: "Видео",
+    dialog: "Просмотр фото и видео",
     close: "Закрыть",
-    prev: "Предыдущее фото",
-    next: "Следующее фото",
+    prev: "Предыдущее",
+    next: "Следующее",
     counter: (n, total) => `${n} / ${total}`,
   },
   documents: {
