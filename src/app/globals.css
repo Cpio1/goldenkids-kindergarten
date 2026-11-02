@@ -307,8 +307,12 @@ html:not([data-layout]) .website-root {
 /* ——— Logo pad: light background, no clipping of the round frame ——— */
 .logo-pad {
   background: #fff;
-  border-radius: 28%;
+  border-radius: 50%;
   box-shadow: 0 0 0 1px rgba(8, 120, 62, 0.08), 0 6px 16px -10px rgba(38, 60, 45, 0.45);
+}
+
+.logo-feature {
+  box-shadow: 0 0 0 8px #ffffff, 0 28px 60px -34px rgba(38, 60, 45, 0.55);
 }
 
 /* ——— Header ——— */

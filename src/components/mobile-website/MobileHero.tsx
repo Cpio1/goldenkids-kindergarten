@@ -6,7 +6,7 @@ import type { SiteImage } from "@/lib/images";
 import { useLanguage } from "@/i18n/LanguageProvider";
 import { CallButton } from "@/components/shared/Actions";
 import { Blob, Cloud, Leaf, Sun } from "@/components/shared/Decor";
-import { LogoMark } from "@/components/shared/Logo";
+import { LogoFeature } from "@/components/shared/Logo";
 import { NavLink } from "@/components/shared/NavLink";
 import { FramedPhoto } from "@/components/shared/Photo";
 import { Section } from "@/components/shared/Section";
@@ -44,27 +44,28 @@ export function MobileHero({ logo, image }: { logo: SiteImage | null; image: Sit
           </NavLink>
         </div>
 
-        <div className="enter relative mt-8" style={{ "--enter-delay": "220ms" } as React.CSSProperties}>
-          <Sun className="spin-slow absolute -right-2 -top-6 z-10 h-14 w-14" />
-          <Leaf className="absolute -bottom-2 right-8 z-10 h-8 w-8 -rotate-12" tone="forest" />
-          <div className="photo-ring shape-soft relative !p-1.5">
-            <FramedPhoto
-              image={image}
-              alt={t.hero.photoAlt}
-              sizes="(min-width: 680px) 640px, 100vw"
-              shapeClassName="shape-soft"
-              minRatio={1.05}
-              maxRatio={1.5}
-              fallbackRatio={1.3}
-              priority
-            />
+        {logo ? (
+          <div className="enter mt-8 flex justify-center" style={{ "--enter-delay": "220ms" } as React.CSSProperties}>
+            <LogoFeature logo={logo} sizes="260px" className="w-[min(260px,72vw)]" compact />
           </div>
-          {logo && (
-            <div className="absolute -bottom-4 left-3 z-10 rounded-[32%] bg-white p-1 shadow-[0_10px_24px_-14px_rgba(38,60,45,0.55)]">
-              <LogoMark logo={logo} size={72} eager />
+        ) : (
+          <div className="enter relative mt-8" style={{ "--enter-delay": "220ms" } as React.CSSProperties}>
+            <Sun className="spin-slow absolute -right-2 -top-6 z-10 h-14 w-14" />
+            <Leaf className="absolute -bottom-2 right-8 z-10 h-8 w-8 -rotate-12" tone="forest" />
+            <div className="photo-ring shape-soft relative !p-1.5">
+              <FramedPhoto
+                image={image}
+                alt={t.hero.photoAlt}
+                sizes="(min-width: 680px) 640px, 100vw"
+                shapeClassName="shape-soft"
+                minRatio={1.05}
+                maxRatio={1.5}
+                fallbackRatio={1.3}
+                priority
+              />
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         <dl aria-label={t.hero.statsLabel} className="m-0 mt-9 grid grid-cols-2 gap-2.5">
           {t.hero.stats.map((stat, i) => (

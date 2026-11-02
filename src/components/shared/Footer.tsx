@@ -17,7 +17,7 @@ export function Footer({ logo }: { logo: SiteImage | null }) {
       <div className="footer-inner container-site relative">
         <Leaf className="absolute right-4 top-2 h-8 w-8 rotate-12 opacity-90" tone="lime" />
         <div className="flex items-center gap-3">
-          <LogoMark logo={logo} size={64} decorative />
+          <LogoMark logo={logo} size={76} decorative />
           <div>
             <Wordmark className="text-lg" />
             <p className="mt-0.5 text-sm text-ink-soft">{t.footer.tagline}</p>

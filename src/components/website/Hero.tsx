@@ -6,7 +6,7 @@ import type { SiteImage } from "@/lib/images";
 import { useLanguage } from "@/i18n/LanguageProvider";
 import { CallButton } from "@/components/shared/Actions";
 import { Blob, Cloud, Leaf, Sun } from "@/components/shared/Decor";
-import { LogoMark } from "@/components/shared/Logo";
+import { LogoFeature } from "@/components/shared/Logo";
 import { NavLink } from "@/components/shared/NavLink";
 import { FramedPhoto } from "@/components/shared/Photo";
 import { Section } from "@/components/shared/Section";
@@ -49,28 +49,29 @@ export function Hero({ logo, image }: { logo: SiteImage | null; image: SiteImage
           </div>
         </div>
 
-        <div className="enter relative mx-auto w-full max-w-[540px]" style={{ "--enter-delay": "120ms" } as React.CSSProperties}>
-          <Blob className="absolute -right-8 top-6 h-[96%] w-[96%]" fill="#DCEBB5" variant={0} />
-          <Sun className="spin-slow absolute -right-4 -top-8 z-10 h-20 w-20" />
-          <Leaf className="absolute -bottom-3 right-10 z-10 h-10 w-10 -rotate-12" tone="forest" />
-          <div className="photo-ring shape-hero relative">
-            <FramedPhoto
-              image={image}
-              alt={t.hero.photoAlt}
-              sizes="(min-width: 1240px) 540px, 45vw"
-              shapeClassName="shape-hero"
-              minRatio={1.1}
-              maxRatio={1.45}
-              fallbackRatio={1.2}
-              priority
-            />
+        {logo ? (
+          <div className="enter flex justify-center" style={{ "--enter-delay": "120ms" } as React.CSSProperties}>
+            <LogoFeature logo={logo} sizes="(min-width: 1240px) 440px, 36vw" className="w-[min(440px,100%)]" />
           </div>
-          {logo && (
-            <div className="absolute -bottom-4 -left-5 z-10 rounded-[32%] bg-white p-1.5 shadow-[0_14px_30px_-16px_rgba(38,60,45,0.55)]">
-              <LogoMark logo={logo} size={104} eager />
+        ) : (
+          <div className="enter relative mx-auto w-full max-w-[540px]" style={{ "--enter-delay": "120ms" } as React.CSSProperties}>
+            <Blob className="absolute -right-8 top-6 h-[96%] w-[96%]" fill="#DCEBB5" variant={0} />
+            <Sun className="spin-slow absolute -right-4 -top-8 z-10 h-20 w-20" />
+            <Leaf className="absolute -bottom-3 right-10 z-10 h-10 w-10 -rotate-12" tone="forest" />
+            <div className="photo-ring shape-hero relative">
+              <FramedPhoto
+                image={image}
+                alt={t.hero.photoAlt}
+                sizes="(min-width: 1240px) 540px, 45vw"
+                shapeClassName="shape-hero"
+                minRatio={1.1}
+                maxRatio={1.45}
+                fallbackRatio={1.2}
+                priority
+              />
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       <div className="container-site relative mt-12">
