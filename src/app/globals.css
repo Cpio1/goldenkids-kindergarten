@@ -450,6 +450,7 @@ html:not([data-layout]) .website-root {
 
 /* «About» video: whole frame (contain), height limited so vertical videos fit phone and laptop screens */
 .about-video {
+  --video-max-h: min(72vh, 560px);
   display: flex;
   justify-content: center;
   width: fit-content;
@@ -457,19 +458,21 @@ html:not([data-layout]) .website-root {
   margin-inline: auto;
   border-radius: 32px;
 }
-.about-video__el {
-  display: block;
-  width: auto;
+.about-video--compact {
+  --video-max-h: min(68svh, 480px);
+}
+.about-video__box {
   max-width: 100%;
-  height: auto;
-  max-height: min(72vh, 560px);
-  min-height: 200px;
-  object-fit: contain;
+  overflow: hidden;
   border-radius: 26px;
   background: #edf5d8;
 }
-.about-video__el--compact {
-  max-height: min(68svh, 480px);
+.about-video__el {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #edf5d8;
 }
 
 /* Gallery tiles */

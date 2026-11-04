@@ -25,6 +25,9 @@ export type GalleryVideo = {
   type?: string;
   /** preview frame image, if one was provided next to the video */
   poster: string | null;
+  /** display size read from the file (mp4/mov/m4v), used to reserve space before the video loads */
+  width?: number;
+  height?: number;
 };
 export type GalleryItem = GalleryPhoto | GalleryVideo;
 
@@ -98,6 +101,49 @@ function videoHash(found: Found): string | null {
   }
 }
 
+/**
+ * Display size of an MP4/MOV: width/height and rotation matrix of the first video track (`tkhd` box).
+ * Reads only the box headers; returns null if the file can't be parsed.
+ */
+function mp4Size(found: Found): { width: number; height: number } | null {
+  if (![".mp4", ".m4v", ".mov"].includes(ext(found.file))) return null;
+  try {
+    const buf = fs.readFileSync(fullPath(found));
+    const walk = (start: number, end: number): { width: number; height: number } | null => {
+      let i = start;
+      while (i + 8 <= end) {
+        let size = buf.readUInt32BE(i);
+        const type = buf.toString("latin1", i + 4, i + 8);
+        let header = 8;
+        if (size === 1) {
+          size = Number(buf.readBigUInt64BE(i + 8));
+          header = 16;
+        } else if (size === 0) size = end - i;
+        if (size < header || i + size > end) return null;
+        const body = i + header;
+        if (["moov", "trak"].includes(type)) {
+          const found = walk(body, i + size);
+          if (found) return found;
+        } else if (type === "tkhd") {
+          const version = buf.readUInt8(body);
+          const matrix = body + (version === 1 ? 52 : 40);
+          const width = buf.readUInt32BE(matrix + 36) / 65536;
+          const height = buf.readUInt32BE(matrix + 40) / 65536;
+          if (width > 0 && height > 0) {
+            const rotated = buf.readInt32BE(matrix + 4) !== 0 && buf.readInt32BE(matrix) === 0; // ±90°
+            return rotated ? { width: Math.round(height), height: Math.round(width) } : { width: Math.round(width), height: Math.round(height) };
+          }
+        }
+        i += size;
+      }
+      return null;
+    };
+    return walk(0, buf.length);
+  } catch {
+    return null;
+  }
+}
+
 const byExtension = (a: Found, b: Found) => {
   const order = [...IMAGE_EXT, ...Object.keys(VIDEO_TYPES)];
   return order.indexOf(ext(a.file)) - order.indexOf(ext(b.file));
@@ -121,14 +167,15 @@ export type SiteMedia = {
 };
 
 /** A real video file named `name.*` (case-insensitive), with an optional `name-poster.*` preview. */
-function findVideo(files: Found[], name: string): GalleryVideo | null {
+function findVideo(files: Found[], name: string): (GalleryVideo & { hash: string }) | null {
   const candidates = files.filter((f) => ext(f.file) in VIDEO_TYPES && baseName(f.file).toLowerCase() === name).sort(byExtension);
   for (const file of candidates) {
-    if (!videoHash(file)) continue; // empty or unreadable
+    const hash = videoHash(file);
+    if (!hash) continue; // empty or unreadable
     const poster = files
       .filter((p) => IMAGE_EXT.includes(ext(p.file)) && baseName(p.file).toLowerCase() === `${name}-poster`)
       .sort(byExtension)[0];
-    return { kind: "video", src: publicUrl(file), type: VIDEO_TYPES[ext(file.file)], poster: poster ? publicUrl(poster) : null };
+    return { kind: "video", src: publicUrl(file), type: VIDEO_TYPES[ext(file.file)], poster: poster ? publicUrl(poster) : null, hash, ...mp4Size(file) };
   }
   return null;
 }
@@ -139,7 +186,9 @@ export function getSiteMedia(): SiteMedia {
   const hero = findNamed(files, "main-page");
   const about = findNamed(files, "main-page2");
 
-  const seen = new Set([logo, hero, about].flatMap((img) => (img ? [img.hash] : [])));
+  const aboutVideo = findVideo(files, "main-page2");
+  // the «About» video is not repeated in the gallery
+  const seen = new Set([logo, hero, about, aboutVideo].flatMap((media) => (media ? [media.hash] : [])));
   const names = new Set<string>();
   const entries: { n: number; order: number; item: GalleryItem }[] = [];
 
@@ -176,7 +225,7 @@ export function getSiteMedia(): SiteMedia {
       entries.push({
         n,
         order: 1,
-        item: { kind: "video", src: publicUrl(f), type: VIDEO_TYPES[ext(f.file)], poster: posterFile ? publicUrl(posterFile) : null },
+        item: { kind: "video", src: publicUrl(f), type: VIDEO_TYPES[ext(f.file)], poster: posterFile ? publicUrl(posterFile) : null, ...mp4Size(f) },
       });
     }
   }
@@ -185,7 +234,14 @@ export function getSiteMedia(): SiteMedia {
     logo: logo && strip(logo),
     heroImage: hero && strip(hero),
     aboutImage: about && strip(about),
-    aboutVideo: findVideo(files, "main-page2"),
+    aboutVideo: aboutVideo && {
+      kind: "video",
+      src: aboutVideo.src,
+      type: aboutVideo.type,
+      poster: aboutVideo.poster,
+      width: aboutVideo.width,
+      height: aboutVideo.height,
+    },
     gallery: entries.map((e) => e.item),
   };
 }
