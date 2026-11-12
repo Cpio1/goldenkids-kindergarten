@@ -44,8 +44,8 @@ export const site = {
   twoGisUrl: null as string | null,
   /** Verified embeddable map URL (iframe src). Leave null — no map is embedded without it. */
   mapEmbedUrl: null as string | null,
-  /** Public folder with documents (Google Drive etc.). */
-  documentsUrl: null as string | null,
+  /** Public folder with documents (Mail.ru Cloud). */
+  documentsUrl: "https://cloud.mail.ru/public/6sWp/xHWjDxZJ1" as string | null,
   whatsapp: {
     /** Turn on only after confirming that WhatsApp works on the phone number above. */
     enabled: false,
